@@ -2,18 +2,54 @@
   "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "webAppName": {
+    "serverName": {
+      "type": "string"
+    },
+    "databaseName": {
       "type": "string"
     },
     "location": {
+      "type": "string"
+    },
+    "webAppName": {
+      "type": "string"
+    },
+    "appServicePlanName": {
       "type": "string"
     }
   },
   "resources": [
     {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2020-08-01-preview",
+      "name": "[parameters('serverName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "administratorLogin": "adminUser",
+        "administratorLoginPassword": "adminPassword"
+      },
+      "resources": [
+        {
+          "type": "databases",
+          "apiVersion": "2020-08-01-preview",
+          "name": "[parameters('databaseName')]",
+          "location": "[parameters('location')]",
+          "dependsOn": [
+            "[concat('Microsoft.Sql/servers/', parameters('serverName'))]"
+          ],
+          "properties": {
+            "collation": "SQL_Latin1_General_CP1_CI_AS",
+            "edition": "Standard",
+            "maxSizeBytes": "1073741824",
+            "requestedServiceObjectiveName": "S0"
+          }
+        }
+      ]
+    },
+    {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2020-06-01",
-      "name": "[parameters('webAppName')]",
+      "name": "[parameters('appServicePlanName')]",
       "location": "[parameters('location')]",
       "sku": {
         "name": "F1",
@@ -27,11 +63,12 @@
       "name": "[parameters('webAppName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', parameters('webAppName'))]"
+        "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('webAppName'))]"
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('appServicePlanName'))]"
       }
     }
   ]
 }
+
